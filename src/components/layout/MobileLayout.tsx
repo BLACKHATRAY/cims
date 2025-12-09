@@ -26,11 +26,9 @@ export function MobileLayout() {
       <MobileHeader onMenuClick={() => setIsMenuOpen(true)} />
       <SideMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
       
-      <main className="pt-16 pb-20">
+      <main className="pt-16 pb-6">
         <Outlet />
       </main>
-      
-      <BottomNavigation />
     </div>
   );
 }
