@@ -101,7 +101,7 @@ export function SideMenu({ isOpen, onClose }: SideMenuProps) {
               ))}
             </div>
 
-            <Separator className="mx-4" />
+            <Separator className="mx-0" />
 
             <div className="p-4 space-y-1">
               {secondaryItems.map((item) => (
