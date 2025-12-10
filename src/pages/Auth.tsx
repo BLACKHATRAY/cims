@@ -32,23 +32,50 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        await login(email, password);
+        const { error } = await login(email, password);
+        if (error) {
+          toast({
+            title: "Login Failed",
+            description: error.message || "Invalid email or password.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
         toast({
           title: "Welcome back!",
           description: "You've successfully signed in.",
         });
       } else {
-        await register(email, password, name, city);
+        if (password.length < 6) {
+          toast({
+            title: "Weak Password",
+            description: "Password must be at least 6 characters.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        const { error } = await register(email, password, name, city);
+        if (error) {
+          toast({
+            title: "Registration Failed",
+            description: error.message || "Could not create account.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
         toast({
           title: "Account created!",
           description: "Welcome to CIMS.",
         });
       }
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: error?.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -183,6 +210,7 @@ export default function Auth() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    minLength={6}
                   />
                   <button
                     type="button"

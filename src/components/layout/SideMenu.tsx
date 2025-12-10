@@ -1,10 +1,8 @@
-import { X, Home, Plus, Clock, CheckCircle, FileText, User, Settings, LogOut, HelpCircle } from 'lucide-react';
+import { X, Home, Plus, Clock, CheckCircle, FileText, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface SideMenuProps {
@@ -20,14 +18,9 @@ const menuItems = [
   { to: '/solved', icon: CheckCircle, label: 'Solved Issues' },
 ];
 
-const secondaryItems = [
-  { to: '/profile', icon: User, label: 'My Profile' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
-  { to: '/help', icon: HelpCircle, label: 'Help & Support' },
-];
 
 export function SideMenu({ isOpen, onClose }: SideMenuProps) {
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -73,14 +66,14 @@ export function SideMenu({ isOpen, onClose }: SideMenuProps) {
               {/* User Info */}
               <div className="flex items-center gap-4">
                 <Avatar className="h-14 w-14 border-2 border-primary-foreground/30">
-                  <AvatarImage src={user?.avatar} alt={user?.name} />
+                  <AvatarImage src={profile?.avatar} alt={profile?.name} />
                   <AvatarFallback className="bg-accent text-accent-foreground text-lg font-semibold">
-                    {user?.name?.charAt(0) || 'U'}
+                    {profile?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-primary-foreground font-semibold">{user?.name}</p>
-                  <p className="text-primary-foreground/70 text-sm">{user?.city}</p>
+                  <p className="text-primary-foreground font-semibold">{profile?.name || 'User'}</p>
+                  <p className="text-primary-foreground/70 text-sm">{profile?.city || 'Not set'}</p>
                 </div>
               </div>
             </div>
@@ -88,23 +81,6 @@ export function SideMenu({ isOpen, onClose }: SideMenuProps) {
             {/* Menu Items */}
             <div className="p-4 space-y-1">
               {menuItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  onClick={onClose}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-foreground hover:bg-muted"
-                  activeClassName="bg-primary/10 text-primary font-medium"
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.label}</span>
-                </NavLink>
-              ))}
-            </div>
-
-            <Separator className="mx-0" />
-
-            <div className="p-4 space-y-1">
-              {secondaryItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
