@@ -7,46 +7,47 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIssues } from '@/contexts/IssueContext';
-
 export default function Profile() {
-  const { user, profile, logout } = useAuth();
-  const { getUserIssues, getIssuesByStatus } = useIssues();
+  const {
+    user,
+    profile,
+    logout
+  } = useAuth();
+  const {
+    getUserIssues,
+    getIssuesByStatus
+  } = useIssues();
   const navigate = useNavigate();
-
   const myIssues = getUserIssues(user?.id || '');
   const stats = {
     total: myIssues.length,
     pending: getIssuesByStatus(user?.id || '', 'pending').length,
     progress: getIssuesByStatus(user?.id || '', ['seen', 'progress']).length,
-    solved: getIssuesByStatus(user?.id || '', 'completed').length,
+    solved: getIssuesByStatus(user?.id || '', 'completed').length
   };
-
   const handleLogout = () => {
     logout();
     navigate('/auth');
   };
-
-  return (
-    <div className="pb-6">
+  return <div className="pb-6">
       {/* Header */}
       <div className="gradient-primary px-4 pt-4 pb-16">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-primary-foreground hover:bg-primary-foreground/10 mb-4"
-          onClick={() => navigate(-1)}
-        >
+        <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10 mb-4" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold text-primary-foreground">My Profile</h1>
       </div>
 
       <div className="px-4 -mt-10">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
+        <motion.div initial={{
+        opacity: 0,
+        y: 10
+      }} animate={{
+        opacity: 1,
+        y: 0
+      }} transition={{
+        duration: 0.3
+      }}>
           <Card className="p-6">
             {/* Avatar Section */}
             <div className="flex flex-col items-center -mt-16 mb-4">
@@ -57,10 +58,7 @@ export default function Profile() {
                     {profile?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <Button
-                  size="icon"
-                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
-                >
+                <Button size="icon" className="absolute bottom-0 right-0 h-8 w-8 rounded-full">
                   <Camera className="h-4 w-4" />
                 </Button>
               </div>
@@ -107,9 +105,7 @@ export default function Profile() {
                   <p className="text-xs text-muted-foreground">Email</p>
                   <p className="text-sm text-foreground">{user?.email}</p>
                 </div>
-                <Button variant="ghost" size="icon">
-                  <Edit className="h-4 w-4" />
-                </Button>
+                
               </div>
 
               <div className="flex items-center gap-3">
@@ -129,16 +125,11 @@ export default function Profile() {
             <Separator className="my-4" />
 
             {/* Logout */}
-            <Button
-              variant="destructive"
-              className="w-full"
-              onClick={handleLogout}
-            >
+            <Button variant="destructive" className="w-full" onClick={handleLogout}>
               Sign Out
             </Button>
           </Card>
         </motion.div>
       </div>
-    </div>
-  );
+    </div>;
 }
