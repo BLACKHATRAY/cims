@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { categoryLabels, departmentLabels, IssueCategory, IssueDepartment } from '@/types/issue';
 
 export default function AddProblem() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { addIssue } = useIssues();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -85,8 +85,8 @@ export default function AddProblem() {
       imageUrl: image,
       status: 'pending',
       userId: user?.id || '',
-      userName: user?.name || '',
-      city: user?.city || '',
+      userName: profile?.name || '',
+      city: profile?.city || '',
     });
 
     toast({

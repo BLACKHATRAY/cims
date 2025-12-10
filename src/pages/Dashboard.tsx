@@ -11,14 +11,14 @@ import { useIssues } from '@/contexts/IssueContext';
 import { categoryLabels } from '@/types/issue';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const { issues } = useIssues();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // Filter issues by city and search
-  const cityIssues = issues.filter(issue => issue.city === user?.city);
+  const cityIssues = issues.filter(issue => issue.city === profile?.city);
   const filteredIssues = cityIssues.filter(issue => {
     const matchesSearch = issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       issue.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -46,10 +46,10 @@ export default function Dashboard() {
           transition={{ duration: 0.3 }}
         >
           <h2 className="text-xl font-bold text-foreground mb-1">
-            Hello, {user?.name?.split(' ')[0]} 👋
+            Hello, {profile?.name?.split(' ')[0] || 'there'} 👋
           </h2>
           <p className="text-muted-foreground text-sm">
-            Issues reported in {user?.city}
+            Issues reported in {profile?.city || 'your city'}
           </p>
         </motion.div>
       </div>

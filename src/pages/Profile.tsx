@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIssues } from '@/contexts/IssueContext';
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
   const { getUserIssues, getIssuesByStatus } = useIssues();
   const navigate = useNavigate();
 
@@ -52,9 +52,9 @@ export default function Profile() {
             <div className="flex flex-col items-center -mt-16 mb-4">
               <div className="relative">
                 <Avatar className="h-24 w-24 border-4 border-card shadow-lg">
-                  <AvatarImage src={user?.avatar} alt={user?.name} />
+                  <AvatarImage src={profile?.avatar} alt={profile?.name} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
-                    {user?.name?.charAt(0) || 'U'}
+                    {profile?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <Button
@@ -64,10 +64,10 @@ export default function Profile() {
                   <Camera className="h-4 w-4" />
                 </Button>
               </div>
-              <h2 className="text-xl font-bold text-foreground mt-4">{user?.name}</h2>
+              <h2 className="text-xl font-bold text-foreground mt-4">{profile?.name || 'User'}</h2>
               <div className="flex items-center gap-1 text-muted-foreground text-sm">
                 <MapPin className="h-3 w-3" />
-                <span>{user?.city}</span>
+                <span>{profile?.city || 'Not set'}</span>
               </div>
             </div>
 
@@ -118,7 +118,7 @@ export default function Profile() {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-muted-foreground">City</p>
-                  <p className="text-sm text-foreground">{user?.city}</p>
+                  <p className="text-sm text-foreground">{profile?.city || 'Not set'}</p>
                 </div>
                 <Button variant="ghost" size="icon">
                   <Edit className="h-4 w-4" />
