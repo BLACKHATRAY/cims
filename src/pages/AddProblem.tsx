@@ -12,6 +12,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIssues } from '@/contexts/IssueContext';
 import { useToast } from '@/hooks/use-toast';
 import { categoryLabels, departmentLabels, IssueCategory, IssueDepartment } from '@/types/issue';
+import { z } from 'zod';
+
+const issueSchema = z.object({
+  title: z.string().trim().min(3, 'Title must be at least 3 characters').max(200, 'Title too long'),
+  description: z.string().trim().min(10, 'Description must be at least 10 characters').max(2000, 'Description too long'),
+  location: z.string().trim().min(3, 'Location must be at least 3 characters').max(300, 'Location too long'),
+});
 
 export default function AddProblem() {
   const { user, profile } = useAuth();
@@ -64,7 +71,19 @@ export default function AddProblem() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!image || !title || !description || !category || !department || !location) {
+    // Validate inputs with zod
+    const result = issueSchema.safeParse({ title, description, location });
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast({
+        title: "Validation Error",
+        description: firstError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!image || !category || !department) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",

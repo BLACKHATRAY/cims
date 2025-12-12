@@ -9,7 +9,15 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { z } from 'zod';
 
+const authSchema = z.object({
+  email: z.string().trim().email('Invalid email address').max(255, 'Email too long'),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
+  name: z.string().trim().min(1, 'Name is required').max(100, 'Name too long').optional(),
+  city: z.string().trim().min(1, 'City is required').max(100, 'City too long').optional(),
+  phone: z.string().regex(/^\+\d{10,15}$/, 'Invalid phone format').optional(),
+});
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -120,6 +128,23 @@ export default function Auth() {
     setIsSubmitting(true);
 
     try {
+      // Validate inputs with zod
+      const validationData = isLogin 
+        ? { email, password } 
+        : { email, password, name, city, phone: phone || undefined };
+      
+      const result = authSchema.safeParse(validationData);
+      if (!result.success) {
+        const firstError = result.error.errors[0];
+        toast({
+          title: "Validation Error",
+          description: firstError.message,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       if (isLogin) {
         const { error } = await login(email, password);
         if (error) {
@@ -140,15 +165,6 @@ export default function Auth() {
           toast({
             title: "Phone Not Verified",
             description: "Please verify your phone number first.",
-            variant: "destructive",
-          });
-          setIsSubmitting(false);
-          return;
-        }
-        if (password.length < 6) {
-          toast({
-            title: "Weak Password",
-            description: "Password must be at least 6 characters.",
             variant: "destructive",
           });
           setIsSubmitting(false);
