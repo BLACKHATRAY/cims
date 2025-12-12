@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, MapPin, ArrowRight, Phone, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, MapPin, ArrowRight, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +15,6 @@ const authSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name too long').optional(),
   city: z.string().trim().min(1, 'City is required').max(100, 'City too long').optional(),
-  phone: z.string().regex(/^\+\d{10,15}$/, 'Invalid phone format').optional(),
 });
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -29,12 +27,6 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [showOtpInput, setShowOtpInput] = useState(false);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   const { login, register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -44,86 +36,6 @@ export default function Auth() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const formatPhoneNumber = (value: string) => {
-    // Remove non-digits except +
-    const cleaned = value.replace(/[^\d+]/g, '');
-    // Ensure it starts with + for international format
-    if (cleaned && !cleaned.startsWith('+')) {
-      return '+' + cleaned;
-    }
-    return cleaned;
-  };
-
-  const handleSendOtp = async () => {
-    if (!phone || phone.length < 10) {
-      toast({
-        title: "Invalid Phone",
-        description: "Please enter a valid phone number with country code (e.g., +91XXXXXXXXXX)",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSendingOtp(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { phone, action: 'send' }
-      });
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      setShowOtpInput(true);
-      toast({
-        title: "OTP Sent",
-        description: "Please check your phone for the verification code.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Failed to send OTP",
-        description: error.message || "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (otp.length !== 6) {
-      toast({
-        title: "Invalid OTP",
-        description: "Please enter the 6-digit code.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsVerifyingOtp(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { phone, action: 'verify', otp }
-      });
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      setIsPhoneVerified(true);
-      setShowOtpInput(false);
-      toast({
-        title: "Phone Verified",
-        description: "Your phone number has been verified successfully.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Verification Failed",
-        description: error.message || "Invalid or expired OTP.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsVerifyingOtp(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +45,7 @@ export default function Auth() {
       // Validate inputs with zod
       const validationData = isLogin 
         ? { email, password } 
-        : { email, password, name, city, phone: phone || undefined };
+        : { email, password, name, city };
       
       const result = authSchema.safeParse(validationData);
       if (!result.success) {
@@ -163,16 +75,7 @@ export default function Auth() {
           description: "You've successfully signed in.",
         });
       } else {
-        if (!isPhoneVerified) {
-          toast({
-            title: "Phone Not Verified",
-            description: "Please verify your phone number first.",
-            variant: "destructive",
-          });
-          setIsSubmitting(false);
-          return;
-        }
-        const { error } = await register(email, password, name, city, phone);
+        const { error } = await register(email, password, name, city);
         if (error) {
           toast({
             title: "Registration Failed",
@@ -199,12 +102,8 @@ export default function Auth() {
     }
   };
 
-  // Reset phone verification when switching tabs
   const handleTabSwitch = (toLogin: boolean) => {
     setIsLogin(toLogin);
-    setIsPhoneVerified(false);
-    setShowOtpInput(false);
-    setOtp('');
     setShowForgotPassword(false);
     setResetEmailSent(false);
   };
@@ -350,78 +249,6 @@ export default function Auth() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="+91XXXXXXXXXX"
-                        className="pl-10 pr-24"
-                        value={phone}
-                        onChange={(e) => {
-                          setPhone(formatPhoneNumber(e.target.value));
-                          setIsPhoneVerified(false);
-                          setShowOtpInput(false);
-                        }}
-                        required
-                        disabled={isPhoneVerified}
-                      />
-                      {isPhoneVerified ? (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-success">
-                          <CheckCircle className="h-4 w-4" />
-                          <span className="text-xs font-medium">Verified</span>
-                        </div>
-                      ) : (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs"
-                          onClick={handleSendOtp}
-                          disabled={isSendingOtp || phone.length < 10}
-                        >
-                          {isSendingOtp ? 'Sending...' : showOtpInput ? 'Resend' : 'Send OTP'}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {showOtpInput && !isPhoneVerified && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="space-y-3"
-                    >
-                      <Label>Enter OTP</Label>
-                      <div className="flex flex-col items-center gap-3">
-                        <InputOTP
-                          maxLength={6}
-                          value={otp}
-                          onChange={setOtp}
-                        >
-                          <InputOTPGroup>
-                            <InputOTPSlot index={0} />
-                            <InputOTPSlot index={1} />
-                            <InputOTPSlot index={2} />
-                            <InputOTPSlot index={3} />
-                            <InputOTPSlot index={4} />
-                            <InputOTPSlot index={5} />
-                          </InputOTPGroup>
-                        </InputOTP>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={handleVerifyOtp}
-                          disabled={isVerifyingOtp || otp.length !== 6}
-                        >
-                          {isVerifyingOtp ? 'Verifying...' : 'Verify OTP'}
-                        </Button>
-                      </div>
-                    </motion.div>
-                  )}
                 </>
               )}
 
@@ -531,7 +358,7 @@ export default function Auth() {
                 type="submit" 
                 className="w-full" 
                 size="lg"
-                disabled={isSubmitting || (!isLogin && !isPhoneVerified)}
+                disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
