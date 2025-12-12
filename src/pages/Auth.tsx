@@ -22,6 +22,8 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -203,6 +205,52 @@ export default function Auth() {
     setIsPhoneVerified(false);
     setShowOtpInput(false);
     setOtp('');
+    setShowForgotPassword(false);
+    setResetEmailSent(false);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const emailResult = z.string().email().safeParse(email);
+    if (!emailResult.success) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+
+      if (error) throw error;
+
+      setResetEmailSent(true);
+      toast({
+        title: "Reset Email Sent",
+        description: "Check your email for a password reset link.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send reset email.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -417,10 +465,66 @@ export default function Auth() {
                 </div>
               </div>
 
-              {isLogin && (
-                <button type="button" className="text-sm text-primary hover:underline">
+              {isLogin && !showForgotPassword && (
+                <button 
+                  type="button" 
+                  className="text-sm text-primary hover:underline"
+                  onClick={() => setShowForgotPassword(true)}
+                >
                   Forgot password?
                 </button>
+              )}
+
+              {showForgotPassword && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="space-y-3 p-4 bg-muted rounded-lg"
+                >
+                  {resetEmailSent ? (
+                    <div className="text-center space-y-2">
+                      <CheckCircle className="h-8 w-8 text-success mx-auto" />
+                      <p className="text-sm text-muted-foreground">
+                        Password reset email sent! Check your inbox.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowForgotPassword(false);
+                          setResetEmailSent(false);
+                        }}
+                      >
+                        Back to login
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        Enter your email above and click the button below to receive a password reset link.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleForgotPassword}
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? 'Sending...' : 'Send Reset Link'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowForgotPassword(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </motion.div>
               )}
 
               <Button 
