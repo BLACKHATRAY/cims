@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Mail, MapPin, FileText, Clock, CheckCircle, Camera, Edit, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mail, MapPin, FileText, Clock, CheckCircle, Camera, Edit, Loader2, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -216,6 +216,16 @@ export default function Profile() {
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Phone className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground">Phone</p>
+                  <p className="text-sm text-foreground">{profile?.phone || 'Not set'}</p>
+                </div>
               </div>
             </div>
 
