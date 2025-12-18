@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIssues } from '@/contexts/IssueContext';
 import { useToast } from '@/hooks/use-toast';
 import { categoryLabels, departmentLabels, IssueCategory, IssueDepartment } from '@/types/issue';
+import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
 const issueSchema = z.object({
@@ -42,30 +43,73 @@ export default function AddProblem() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImage(reader.result as string);
-        analyzeImage();
+        const imageData = reader.result as string;
+        setImage(imageData);
+        analyzeImage(imageData);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const analyzeImage = async () => {
+  const analyzeImage = async (imageBase64: string) => {
     setIsAnalyzing(true);
-    // Simulate AI analysis
-    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Mock AI results
-    setTitle('Road Damage - Pothole Detected');
-    setDescription('A significant pothole has been detected on the road surface. The damage appears to be caused by water seepage and heavy vehicle traffic. This poses a safety hazard for motorists and pedestrians.');
-    setCategory('road_damage');
-    setDepartment('pwd');
-    setLocation('Main Street, Near City Center');
-    
-    setIsAnalyzing(false);
-    toast({
-      title: "AI Analysis Complete",
-      description: "We've automatically filled in the details. Please review and edit if needed.",
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-issue-image', {
+        body: { imageBase64 }
+      });
+
+      if (error) {
+        console.error('AI analysis error:', error);
+        toast({
+          title: "Analysis Failed",
+          description: "Could not analyze the image. Please fill in the details manually.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Map AI response to form fields
+      if (data.problem) {
+        setTitle(data.problem);
+      }
+      if (data.reason) {
+        setDescription(data.reason);
+      }
+      if (data.category && categoryLabels[data.category as IssueCategory]) {
+        setCategory(data.category as IssueCategory);
+      }
+      if (data.governing_body) {
+        // Map governing_body to department
+        const deptMap: Record<string, IssueDepartment> = {
+          'municipal': 'municipal',
+          'panchayat': 'panchayat',
+          'town_panchayat': 'town_panchayat',
+          'corporation': 'corporation',
+        };
+        const mappedDept = deptMap[data.governing_body];
+        if (mappedDept) {
+          setDepartment(mappedDept);
+        }
+      }
+      if (data.location) {
+        setLocation(data.location);
+      }
+
+      toast({
+        title: "AI Analysis Complete",
+        description: "We've automatically filled in the details. Please review and edit if needed.",
+      });
+    } catch (err) {
+      console.error('AI analysis error:', err);
+      toast({
+        title: "Analysis Failed",
+        description: "Could not analyze the image. Please fill in the details manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

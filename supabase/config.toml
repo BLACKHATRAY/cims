@@ -2,3 +2,6 @@ project_id = "idmdbjvbzeungtzimwwr"
 
 [functions.send-otp]
 verify_jwt = false
+
+[functions.analyze-issue-image]
+verify_jwt = false
