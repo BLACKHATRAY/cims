@@ -250,9 +250,11 @@ export default function AddProblem() {
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(departmentLabels).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
+                  {Object.entries(departmentLabels)
+                    .filter(([key]) => !['water', 'energy', 'pwd'].includes(key))
+                    .map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
