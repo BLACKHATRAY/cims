@@ -48,7 +48,7 @@ export interface User {
 }
 
 export const departmentLabels: Record<IssueDepartment, string> = {
-  municipal: 'Municipal Corporation',
+  municipal: 'Municipality',
   panchayat: 'Panchayat',
   town_panchayat: 'Town Panchayat',
   corporation: 'Corporation',
