@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
-const ALLOWED_EMAIL_DOMAIN = 'google.com';
+const ALLOWED_EMAIL_DOMAIN = 'gmail.com';
 
 const authSchema = z.object({
   email: z.string().trim().email('Invalid email address').max(255, 'Email too long')
