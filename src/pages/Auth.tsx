@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, MapPin, ArrowRight, CheckCircle, Chrome } from 'lucide-react';
@@ -27,7 +27,7 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -36,6 +36,18 @@ export default function Auth() {
   const { login, register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const domainError = localStorage.getItem('auth_domain_error');
+    if (domainError) {
+      localStorage.removeItem('auth_domain_error');
+      toast({
+        title: 'Email domain not allowed',
+        description: `Please sign in using an @${ALLOWED_EMAIL_DOMAIN} account.`,
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -116,28 +128,28 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
     try {
+      // Note: "hd" only works reliably for Google Workspace domains (not gmail.com).
+      const options: Parameters<typeof supabase.auth.signInWithOAuth>[0]['options'] = {
+        redirectTo: `${window.location.origin}/dashboard`,
+      };
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-          queryParams: {
-            hd: ALLOWED_EMAIL_DOMAIN, // Restricts Google account picker to this domain
-          },
-        },
+        options,
       });
 
       if (error) {
         toast({
-          title: "Google Sign-In Failed",
-          description: error.message || "Could not sign in with Google.",
-          variant: "destructive",
+          title: 'Google Sign-In Failed',
+          description: error.message || 'Could not sign in with Google.',
+          variant: 'destructive',
         });
       }
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error?.message || "Something went wrong. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: error?.message || 'Something went wrong. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);

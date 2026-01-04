@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 
+const ALLOWED_EMAIL_DOMAIN = 'gmail.com';
+
 interface Profile {
   id: string;
   user_id: string;
@@ -38,7 +40,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
+        // Enforce allowed email domain for OAuth + email/password sessions.
+        const email = session?.user?.email ?? '';
+        const isAllowed = email.toLowerCase().endsWith(`@${ALLOWED_EMAIL_DOMAIN}`);
+        if (session?.user && !isAllowed) {
+          // Never call Supabase directly inside the callback; defer to avoid deadlocks.
+          setTimeout(() => {
+            localStorage.setItem('auth_domain_error', '1');
+            supabase.auth.signOut();
+          }, 0);
+          setProfile(null);
+          return;
+        }
+
         // Fetch profile with setTimeout to avoid deadlock
         if (session?.user) {
           setTimeout(() => {
