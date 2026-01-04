@@ -10,8 +10,13 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
+const ALLOWED_EMAIL_DOMAIN = 'google.com';
+
 const authSchema = z.object({
-  email: z.string().trim().email('Invalid email address').max(255, 'Email too long'),
+  email: z.string().trim().email('Invalid email address').max(255, 'Email too long')
+    .refine((email) => email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`), {
+      message: `Only @${ALLOWED_EMAIL_DOMAIN} email addresses are allowed`,
+    }),
   password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name too long').optional(),
   city: z.string().trim().min(1, 'City is required').max(100, 'City too long').optional(),
@@ -115,6 +120,9 @@ export default function Auth() {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            hd: ALLOWED_EMAIL_DOMAIN, // Restricts Google account picker to this domain
+          },
         },
       });
 
@@ -287,12 +295,15 @@ export default function Auth() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder={`Enter your @${ALLOWED_EMAIL_DOMAIN} email`}
                     className="pl-10"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Only @{ALLOWED_EMAIL_DOMAIN} emails are allowed
+                  </p>
                 </div>
               </div>
 
