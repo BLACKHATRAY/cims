@@ -412,7 +412,7 @@ export default function Auth() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full hover:bg-transparent"
+                className="w-full hover:bg-transparent hover:text-foreground"
                 size="lg"
                 onClick={handleGoogleSignIn}
                 disabled={isSubmitting}
