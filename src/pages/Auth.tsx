@@ -302,8 +302,8 @@ export default function Auth() {
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="relative flex items-center">
+                  <Mail className="absolute left-3 h-4 w-4 text-muted-foreground z-10" />
                   <Input
                     id="email"
                     type="email"
