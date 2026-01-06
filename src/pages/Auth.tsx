@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, MapPin, ArrowRight, CheckCircle, Chrome } from 'lucide-react';
@@ -10,13 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
-const ALLOWED_EMAIL_DOMAIN = 'gmail.com';
-
 const authSchema = z.object({
-  email: z.string().trim().email('Invalid email address').max(255, 'Email too long')
-    .refine((email) => email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`), {
-      message: `Only @${ALLOWED_EMAIL_DOMAIN} email addresses are allowed`,
-    }),
+  email: z.string().trim().email('Invalid email address').max(255, 'Email too long'),
   password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name too long').optional(),
   city: z.string().trim().min(1, 'City is required').max(100, 'City too long').optional(),
@@ -27,7 +22,7 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
-
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -36,18 +31,6 @@ export default function Auth() {
   const { login, register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    const domainError = localStorage.getItem('auth_domain_error');
-    if (domainError) {
-      localStorage.removeItem('auth_domain_error');
-      toast({
-        title: 'Email domain not allowed',
-        description: `Please sign in using an @${ALLOWED_EMAIL_DOMAIN} account.`,
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -128,28 +111,25 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
     try {
-      // Note: "hd" only works reliably for Google Workspace domains (not gmail.com).
-      const options: Parameters<typeof supabase.auth.signInWithOAuth>[0]['options'] = {
-        redirectTo: `${window.location.origin}/dashboard`,
-      };
-
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
       });
 
       if (error) {
         toast({
-          title: 'Google Sign-In Failed',
-          description: error.message || 'Could not sign in with Google.',
-          variant: 'destructive',
+          title: "Google Sign-In Failed",
+          description: error.message || "Could not sign in with Google.",
+          variant: "destructive",
         });
       }
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error?.message || 'Something went wrong. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: error?.message || "Something went wrong. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -302,20 +282,17 @@ export default function Auth() {
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <div className="relative flex items-center">
-                  <Mail className="absolute left-3 h-4 w-4 text-muted-foreground z-10" />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
-                    placeholder={`Enter your @${ALLOWED_EMAIL_DOMAIN} email`}
+                    placeholder="Enter your email"
                     className="pl-10"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Only @{ALLOWED_EMAIL_DOMAIN} emails are allowed
-                  </p>
                 </div>
               </div>
 
@@ -440,7 +417,7 @@ export default function Auth() {
                 onClick={handleGoogleSignIn}
                 disabled={isSubmitting}
               >
-                <svg className="h-5 w-5 mr-2 -mt-0.5" viewBox="0 0 24 24">
+                <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
                   <path
                     fill="currentColor"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
