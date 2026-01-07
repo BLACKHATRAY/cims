@@ -1,9 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Maximum image size: 10MB in base64 (accounting for base64 encoding overhead)
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_BASE64_LENGTH = Math.ceil(MAX_IMAGE_SIZE_BYTES * 4 / 3);
+
+// Allowed image formats
+const ALLOWED_IMAGE_FORMATS = /^data:image\/(jpeg|jpg|png|webp|gif);base64,/;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,11 +19,76 @@ serve(async (req) => {
   }
 
   try {
+    // Authentication check
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase credentials');
+      return new Response(
+        JSON.stringify({ error: 'Service configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create client with user's auth token
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify the user's JWT
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getUser(token);
+    
+    if (claimsError || !claimsData?.user) {
+      console.error('Auth validation failed:', claimsError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claimsData.user.id;
+    console.log(`Authenticated user: ${userId}`);
+
     const { imageBase64 } = await req.json();
     
+    // Input validation: Check if image is provided
     if (!imageBase64) {
       return new Response(
         JSON.stringify({ error: 'Image is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Input validation: Check image type
+    if (typeof imageBase64 !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Invalid image format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Input validation: Check image size (prevent resource exhaustion)
+    if (imageBase64.length > MAX_BASE64_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: 'Image too large. Maximum size is 10MB.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Input validation: Check image format
+    if (imageBase64.startsWith('data:') && !ALLOWED_IMAGE_FORMATS.test(imageBase64)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid image format. Allowed: JPEG, PNG, WebP, GIF.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -67,7 +140,7 @@ Return ONLY valid JSON in this exact format (no markdown, no code blocks):
   "reason": "Detailed description of the issue, risks, and recommended action"
 }`;
 
-    console.log("Sending image to AI for analysis...");
+    console.log(`User ${userId} sending image to AI for analysis...`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -118,7 +191,7 @@ Return ONLY valid JSON in this exact format (no markdown, no code blocks):
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
     
-    console.log("AI response:", content);
+    console.log(`AI response for user ${userId}:`, content);
 
     if (!content) {
       return new Response(
@@ -134,9 +207,9 @@ Return ONLY valid JSON in this exact format (no markdown, no code blocks):
       const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       analysisResult = JSON.parse(cleanContent);
     } catch (parseError) {
-      console.error("Failed to parse AI response:", parseError, content);
+      console.error("Failed to parse AI response:", parseError);
       return new Response(
-        JSON.stringify({ error: 'Failed to parse AI analysis', raw: content }),
+        JSON.stringify({ error: 'Failed to parse AI analysis' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
